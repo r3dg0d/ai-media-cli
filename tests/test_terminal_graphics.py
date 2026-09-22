@@ -75,3 +75,26 @@ def test_capabilities_dict():
     caps = detect_capabilities(force=GraphicsCapability.ANSI)
     d = caps.as_dict()
     assert d["mode"] == "ansi"
+
+
+def test_ghostty_env_hint(monkeypatch):
+    monkeypatch.setenv("GHOSTTY_RESOURCES_DIR", "/usr/share/ghostty")
+    monkeypatch.delenv("KITTY_WINDOW_ID", raising=False)
+    monkeypatch.delenv("TERM_PROGRAM", raising=False)
+    monkeypatch.setenv("TERM", "xterm-256color")
+    # Force tty so mode isn't NONE
+    import io
+    buf = io.StringIO()
+    monkeypatch.setattr(buf, "isatty", lambda: True)
+    caps = detect_capabilities(stream=buf)
+    assert caps.kitty_detected is True
+    assert caps.mode is GraphicsCapability.KITTY
+
+
+def test_ai_media_graphics_env_force(monkeypatch):
+    monkeypatch.setenv("AI_MEDIA_GRAPHICS", "chafa")
+    import io
+    buf = io.StringIO()
+    monkeypatch.setattr(buf, "isatty", lambda: True)
+    caps = detect_capabilities(stream=buf)
+    assert caps.mode is GraphicsCapability.CHAFA

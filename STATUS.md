@@ -52,3 +52,11 @@ Last updated: 2026-09-22 01:03 PT
   - `text2img` → `~/Pictures/AI/text2img/cli-fox-seed7.png` (512², 8 steps, ~29s)
   - `img2img` → `~/Pictures/AI/img2img/astronaut-watercolor-seed9.png` (1024², 8 steps, ~79s)
 - AllTalk purged (nixos system-90); ComfyUI already removed
+
+## 2026-09-22 — preview + TRELLIS stack
+
+- Ghostty/Kitty graphics: `GHOSTTY_*` + `AI_MEDIA_GRAPHICS` + `--graphics`
+- imv open fallbacks; `open_image_mode=auto`
+- TRELLIS.2 cloned; env with torch/xformers; CUDA exts built (cumesh, flex_gemm, nvdiffrast, o_voxel)
+- `3dai doctor` → trellis status **ready** (weights download separate)
+- SCAIL-2 cloned; `scripts/setup_scail_env.sh` scaffold (weights not pulled)

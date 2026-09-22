@@ -57,17 +57,21 @@ def _term_program() -> str | None:
 
 
 def _kitty_env_hints() -> bool:
-    """Fast path: TERM_PROGRAM / KITTY_WINDOW_ID / TERM contains kitty."""
+    """Fast path: TERM_PROGRAM / KITTY_WINDOW_ID / Ghostty / WezTerm."""
     if os.environ.get("KITTY_WINDOW_ID"):
         return True
+    # Ghostty sets GHOSTTY_RESOURCES_DIR (and often TERM=xterm-ghostty)
+    if os.environ.get("GHOSTTY_RESOURCES_DIR") or os.environ.get("GHOSTTY_BIN_DIR"):
+        return True
     tp = (_term_program() or "").lower()
-    if "kitty" in tp:
+    if "kitty" in tp or tp in {"ghostty", "wezterm"}:
         return True
     term = (os.environ.get("TERM") or "").lower()
-    if "kitty" in term:
+    if "kitty" in term or "ghostty" in term or term.endswith("-ghostty"):
         return True
-    # Ghostty and WezTerm also speak the Kitty graphics protocol
-    if tp in {"ghostty", "wezterm"} or "ghostty" in term:
+    # Explicit override for scripts launched outside Ghostty but piping into it
+    force = (os.environ.get("AI_MEDIA_GRAPHICS") or "").strip().lower()
+    if force in {"kitty", "ghostty", "wezterm"}:
         return True
     return False
 
@@ -100,6 +104,18 @@ def detect_capabilities(
     tp = _term_program()
     kitty = _kitty_env_hints() or _query_kitty_support()
     chafa = _chafa_available()
+
+    env_force = (os.environ.get("AI_MEDIA_GRAPHICS") or "").strip().lower()
+    if force is None and env_force:
+        mapping = {
+            "kitty": GraphicsCapability.KITTY,
+            "ghostty": GraphicsCapability.KITTY,
+            "wezterm": GraphicsCapability.KITTY,
+            "chafa": GraphicsCapability.CHAFA,
+            "ansi": GraphicsCapability.ANSI,
+            "none": GraphicsCapability.NONE,
+        }
+        force = mapping.get(env_force)
 
     if force is not None:
         mode = force

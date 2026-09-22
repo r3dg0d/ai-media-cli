@@ -40,7 +40,8 @@ def main(argv: list[str] | None = None) -> None:
         parser.print_help()
         sys.exit(0)
     if args.cmd == "doctor":
-        print(json.dumps({"tool": "3dai", "cloud": False, "status": "skeleton"}, indent=2))
+        from ai_media.trellis.backend import TrellisBackend
+        print(json.dumps({"tool": "3dai", "cloud": False, "trellis": TrellisBackend().doctor()}, indent=2))
         sys.exit(0)
     if args.cmd == "status":
         try:

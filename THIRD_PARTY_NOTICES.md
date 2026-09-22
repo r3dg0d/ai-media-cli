@@ -6,23 +6,17 @@ weights and licenses are **not** redistributed here. Install separately.
 ## Qwen-Image-2.1
 
 - Source: https://huggingface.co/Qwen/Qwen-Image-2.1
-- Org: Alibaba / Qwen
-- License: see upstream HF / ModelScope card (placeholder — verify before redistribute)
-- Used by: `text2img`, `img2img` backends
+- License: **Qwen Research License** (non-commercial without separate grant)
+- Used by: `text2img`, `img2img`
 
-## TRELLIS / TRELLIS.2
+## TRELLIS.2
 
-- Source: Microsoft TRELLIS (research)
-- License: see upstream repository (placeholder — verify before redistribute)
-- Used by: `trellis` reconstruction/export
+- Source: https://github.com/microsoft/TRELLIS.2 · weights `microsoft/TRELLIS.2-4B`
+- License: **MIT** (nvdiffrast/nvdiffrec: separate NVIDIA licenses)
+- Used by: `trellis` / `3dai` reconstruct
 
-## SCAIL / SCAIL-2
+## SCAIL-2
 
-- Source: see research notes under companion research tree
-- License: see upstream (placeholder — verify before redistribute)
-- Intended for future video / pose pipelines (`editvideo`)
-
-## Other runtime dependencies
-
-Python packages listed in `pyproject.toml` retain their own licenses
-(e.g. Rich, Pillow, PyYAML/toml). See installed package metadata.
+- Source: https://github.com/zai-org/SCAIL-2
+- License: code **Apache-2.0** (verify HF card before commercial use)
+- Used by: `editvideo` (optional)

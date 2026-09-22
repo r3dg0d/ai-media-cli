@@ -42,7 +42,7 @@ class Config:
 
     # Preview / open behavior
     preview_mode: PreviewMode = "auto"
-    open_image_mode: OpenMode = "never"
+    open_image_mode: OpenMode = "auto"
     open_video_mode: OpenMode = "prompt"
     image_viewer: str = "imv"
     video_opener: str = "xdg-open"

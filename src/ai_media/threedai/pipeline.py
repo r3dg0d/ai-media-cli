@@ -61,6 +61,31 @@ def run_pipeline(
 
 def _run_stage(job: Job, name: str) -> dict[str, Any]:
     out = job.dir / f"{name}.json"
-    payload = {"stage": name, "status": "placeholder", "cloud": False}
+    payload: dict[str, Any] = {"stage": name, "status": "placeholder", "cloud": False}
+    if name == "reconstruct":
+        try:
+            from ai_media.trellis.backend import TrellisBackend
+
+            be = TrellisBackend()
+            doc = be.doctor()
+            payload["doctor"] = {
+                k: doc.get(k)
+                for k in ("status", "o_voxel", "pipeline_class", "import_error")
+            }
+            if doc.get("pipeline_class") and doc.get("o_voxel"):
+                src = (job.dir / "input_ref.txt").read_text(encoding="utf-8").strip()
+                glb = be.reconstruct(Path(src), output_dir=job.dir / "mesh")
+                payload["status"] = "ok"
+                payload["glb"] = str(glb)
+            else:
+                payload["status"] = "skipped"
+                payload["reason"] = (
+                    doc.get("import_error")
+                    or doc.get("o_voxel_error")
+                    or "trellis/o_voxel not ready — run scripts/setup_trellis_env.sh"
+                )
+        except Exception as e:  # noqa: BLE001
+            payload["status"] = "error"
+            payload["error"] = str(e)
     out.write_text(__import__("json").dumps(payload, indent=2) + "\n", encoding="utf-8")
-    return {"path": str(out)}
+    return {"path": str(out), **{k: v for k, v in payload.items() if k != "doctor"}}

@@ -52,13 +52,21 @@ def open_image(
     """Open image with imv (argv list) or configured viewer. Returns True if launched."""
     cfg = cfg or load_config(create=False)
     path = Path(path).resolve()
-    cmd_name = viewer or cfg.image_viewer
-    exe = shutil.which(cmd_name)
-    if not exe:
-        return False
-    # Always argv list — never shell
-    subprocess.Popen([exe, str(path)], start_new_session=True)
-    return True
+    candidates = []
+    primary = viewer or cfg.image_viewer
+    if primary:
+        candidates.append(primary)
+    for fallback in ("imv", "xdg-open"):
+        if fallback not in candidates:
+            candidates.append(fallback)
+    for cmd_name in candidates:
+        exe = shutil.which(cmd_name)
+        if not exe:
+            continue
+        # Always argv list — never shell
+        subprocess.Popen([exe, str(path)], start_new_session=True)
+        return True
+    return False
 
 
 def open_video(

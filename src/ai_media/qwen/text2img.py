@@ -44,6 +44,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--format", dest="fmt", default=None, choices=["png", "webp", "jpg"])
     p.add_argument("--metadata", action=argparse.BooleanOptionalAction, default=True)
     p.add_argument("--preview", action=argparse.BooleanOptionalAction, default=True)
+    p.add_argument(
+        "--graphics",
+        choices=["auto", "kitty", "ghostty", "chafa", "ansi", "none"],
+        default="auto",
+        help="Force terminal graphics backend (Ghostty uses kitty protocol)",
+    )
     p.add_argument("--open", dest="open_image", action="store_true")
     p.add_argument("--monitor", action="store_true")
     p.add_argument("-q", "--quiet", action="store_true")
@@ -84,6 +90,10 @@ def main(argv: list[str] | None = None) -> None:
     steps = args.steps if args.steps is not None else cfg.default_steps
     memory = args.memory or cfg.memory_profile
     fmt = args.fmt or cfg.default_format
+
+    if getattr(args, "graphics", "auto") and args.graphics != "auto":
+        import os as _os
+        _os.environ["AI_MEDIA_GRAPHICS"] = args.graphics
 
     if not args.quiet:
         banner("text2img", "Qwen-Image-2.1")
