@@ -28,3 +28,12 @@ Env: `~/.local/share/ai-media/envs/trellis` · Repo: `~/Projects/TRELLIS.2`
 ```
 
 RTX 4090: start at 512³. Wrapper sets `ATTN_BACKEND=xformers`.
+
+
+## Gated dependency: DINOv3
+
+TRELLIS.2 image encoder loads `facebook/dinov3-vitl16-pretrain-lvd1689m` (gated on Hugging Face).
+
+1. Accept access at https://huggingface.co/facebook/dinov3-vitl16-pretrain-lvd1689m
+2. `hf auth login` (or set `HF_TOKEN`)
+3. Re-run `3dai run ./input.png --stages ingest reconstruct`

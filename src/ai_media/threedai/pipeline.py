@@ -53,7 +53,14 @@ def run_pipeline(
         stage = Stage(name) if name in Stage._value2member_map_ else Stage.INGEST
         result = _run_stage(job, name)
         if name == "reconstruct":
-            has_mesh = True
+            if result.get("status") == "error":
+                advance(job, Stage.FAILED, "failed", reason=result.get("error", "reconstruct failed"))
+                raise RuntimeError(result.get("error", "reconstruct failed"))
+            if result.get("status") == "ok":
+                has_mesh = True
+            else:
+                # skipped — still continue but note no mesh
+                has_mesh = False
         advance(job, stage, "done", result=result)
     advance(job, Stage.DONE, "done")
     return job
