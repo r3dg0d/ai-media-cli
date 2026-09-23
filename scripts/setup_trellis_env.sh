@@ -22,6 +22,7 @@ export UV_LINK_MODE=copy
 export ATTN_BACKEND="${ATTN_BACKEND:-xformers}"
 
 uv pip install --python "$ENV/bin/python" torch torchvision --index-url https://download.pytorch.org/whl/cu128
+$PYTHON -m pip install -q einops  # BiRefNet rembg
 uv pip install --python "$ENV/bin/python" imageio imageio-ffmpeg tqdm easydict opencv-python-headless ninja trimesh transformers tensorboard pandas lpips zstandard kornia timm pillow 'git+https://github.com/EasternJournalist/utils3d.git@9a4eb15e4021b67b12c460c7057d642626897ec8'
 uv pip install --python "$ENV/bin/python" xformers --index-url https://download.pytorch.org/whl/cu128 || true
 SITE="$("$ENV/bin/python" -c 'import site; print(site.getsitepackages()[0])')"
@@ -50,3 +51,9 @@ from trellis2.pipelines import Trellis2ImageTo3DPipeline
 import o_voxel
 print("pipeline+o_voxel OK")
 PY
+
+# transformers 5.x DINOv3 nesting fix
+PATCH_FILE="$(cd "$(dirname "$0")/.." && pwd)/patches/trellis2-dinov3-transformers5.patch"
+if [ -d "${TRELLIS2_REPO:-$HOME/Projects/TRELLIS.2}" ] && [ -f "$PATCH_FILE" ]; then
+  (cd "${TRELLIS2_REPO:-$HOME/Projects/TRELLIS.2}" && patch -p1 -N -r - < "$PATCH_FILE" >/dev/null 2>&1 || true)
+fi

@@ -37,3 +37,16 @@ TRELLIS.2 image encoder loads `facebook/dinov3-vitl16-pretrain-lvd1689m` (gated 
 1. Accept access at https://huggingface.co/facebook/dinov3-vitl16-pretrain-lvd1689m
 2. `hf auth login` (or set `HF_TOKEN`)
 3. Re-run `3dai run ./input.png --stages ingest reconstruct`
+
+## Background removal (rembg)
+
+Microsoft's `pipeline.json` pins gated `briaai/RMBG-2.0`. The ai-media TRELLIS backend
+overrides rembg to ungated [`ZhengPeng7/BiRefNet`](https://huggingface.co/ZhengPeng7/BiRefNet)
+so reconstruct works without Bria approval. Accept Meta DINOv3 access for the image
+conditioner (`facebook/dinov3-*`). Optional: accept RMBG-2.0 if you want the upstream default.
+
+## DINOv3 + transformers 5.x
+
+`DinoV3FeatureExtractor` in upstream TRELLIS.2 expects `model.layer`. transformers 5.x
+moved layers to `model.model.layer` and added `model.norm`. Apply
+`patches/trellis2-dinov3-transformers5.patch` (already applied under `~/Projects/TRELLIS.2`).

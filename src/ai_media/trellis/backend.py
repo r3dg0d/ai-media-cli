@@ -88,9 +88,24 @@ class TrellisBackend:
         os.environ.setdefault("ATTN_BACKEND", "xformers")
         try:
             from trellis2.pipelines import Trellis2ImageTo3DPipeline
+            from trellis2.pipelines import rembg as rembg_mod
         except Exception as e:
             raise TrellisNotInstalledError(str(e)) from e
-        pipe = Trellis2ImageTo3DPipeline.from_pretrained(self.model_id)
+        # HF pipeline.json pins gated briaai/RMBG-2.0; force ungated BiRefNet.
+        _orig_biref = rembg_mod.BiRefNet
+
+        class _BiRefNetUngated(_orig_biref):  # type: ignore[misc,valid-type]
+            def __init__(self, model_name: str = "ZhengPeng7/BiRefNet", **kwargs):
+                name = model_name or "ZhengPeng7/BiRefNet"
+                if "RMBG" in name or "briaai" in name.lower():
+                    name = "ZhengPeng7/BiRefNet"
+                super().__init__(model_name=name, **kwargs)
+
+        rembg_mod.BiRefNet = _BiRefNetUngated
+        try:
+            pipe = Trellis2ImageTo3DPipeline.from_pretrained(self.model_id)
+        finally:
+            rembg_mod.BiRefNet = _orig_biref
         pipe.cuda()
         self._pipe = pipe
         return pipe
