@@ -7,7 +7,7 @@ Local-first AI media CLI suite for Vincent ([@r3dg0d](https://github.com/r3dg0d)
 | `text2img` | Qwen-Image-2.1 text → image |
 | `img2img` | Qwen-Image-2.1 image edit / img2img |
 | `3dai` | Multi-stage 3D asset pipeline (local, fail-closed) |
-| `editvideo` | Video edit job runner + TUI shell |
+| `editvideo` | SCAIL-2 character animation / video jobs |
 | `ai-media doctor` | Environment / GPU / graphics diagnostics |
 
 Model weights are **not** bundled. Shared infrastructure (terminal graphics,
@@ -28,6 +28,16 @@ Optional Qwen deps (GPU machine):
 ```bash
 ./scripts/setup_qwen_env.sh
 pip install -e ".[qwen]"
+```
+
+Optional SCAIL-2 / editvideo (GPU machine, weights explicit):
+
+```bash
+./scripts/setup_scail_env.sh
+./scripts/setup_scail_env.sh --download-weights --convert   # ~82 GiB
+./scripts/install_editvideo_wrapper.sh
+editvideo doctor
+editvideo smoke --example animation_001 --steps 20
 ```
 
 ## Quick examples

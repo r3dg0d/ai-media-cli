@@ -41,7 +41,8 @@ qwen = [
   "accelerate>=0.34",
 ]
 trellis = []
-all = ["ai-media-cli[qwen,trellis,dev]"]
+scail = []  # deps via scripts/setup_scail_env.sh
+all = ["ai-media-cli[qwen,trellis,scail,dev]"]
 
 [project.scripts]
 text2img = "ai_media.qwen.text2img:main"
