@@ -57,7 +57,7 @@ mkdir -p "$(dirname "$VENV_DIR")" "$MODELS_DIR"
 
 if command -v uv >/dev/null 2>&1; then
   if [[ ! -d "$VENV_DIR" ]]; then
-    uv venv "$VENV_DIR" --python 3.12 || uv venv "$VENV_DIR"
+    uv venv "$VENV_DIR" --python "${AI_MEDIA_PYTHON:-3.11}" || uv venv "$VENV_DIR" --python 3.12 || uv venv "$VENV_DIR"
   fi
 else
   if [[ ! -d "$VENV_DIR" ]]; then
@@ -65,24 +65,32 @@ else
   fi
 fi
 
-# shellcheck disable=SC1091
-source "$VENV_DIR/bin/activate"
-python -m pip install -U pip wheel packaging huggingface_hub
+PY="$VENV_DIR/bin/python"
+if command -v uv >/dev/null 2>&1; then
+  PIP=(uv pip install --python "$PY")
+else
+  # shellcheck disable=SC1091
+  source "$VENV_DIR/bin/activate"
+  "$PY" -m ensurepip --upgrade >/dev/null 2>&1 || true
+  PIP=("$PY" -m pip install)
+fi
+
+echo "==> Installing base tooling"
+"${PIP[@]}" -U pip wheel packaging huggingface_hub
 
 echo "==> Installing torch/torchvision (cu128 preferred)"
-python -m pip install torch torchvision --index-url "$TORCH_INDEX_URL" || \
-  python -m pip install torch torchvision
+"${PIP[@]}" torch torchvision --index-url "$TORCH_INDEX_URL" || \
+  "${PIP[@]}" torch torchvision
 
 REQ="$SCAIL_REPO/requirements.txt"
 if [[ -f "$REQ" ]]; then
   echo "==> Installing SCAIL requirements (flash_attn is best-effort)"
-  # Install everything except flash_attn first — often needs special wheels on NixOS
   grep -vi '^flash_attn' "$REQ" | grep -v '^#' | grep -v '^[[:space:]]*$' > /tmp/scail-req-nofa.txt || true
-  python -m pip install -r /tmp/scail-req-nofa.txt || true
-  python -m pip install einops || true
-  if ! python -c 'import flash_attn' 2>/dev/null; then
+  "${PIP[@]}" -r /tmp/scail-req-nofa.txt || true
+  "${PIP[@]}" einops || true
+  if ! "$PY" -c 'import flash_attn' 2>/dev/null; then
     echo "    trying flash_attn (may fail on NixOS — continue without if needed)"
-    python -m pip install flash_attn --no-build-isolation || \
+    "${PIP[@]}" flash_attn --no-build-isolation || \
       echo "WARN: flash_attn install failed; SCAIL may still run depending on code paths" >&2
   fi
 fi
@@ -101,7 +109,7 @@ done
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 if [[ -f "$REPO_ROOT/pyproject.toml" ]]; then
-  python -m pip install -e "$REPO_ROOT" || true
+  "${PIP[@]}" -e "$REPO_ROOT" || true
 fi
 
 if [[ "$DOWNLOAD_WEIGHTS" -eq 1 ]]; then
@@ -140,6 +148,10 @@ if [[ "$CONVERT" -eq 1 ]]; then
   echo "==> convert.py → $OUT"
   (cd "$SCAIL_REPO" && python convert.py --scail-dir "$CKPT" --save-path "$OUT")
 fi
+
+export PATH="$VENV_DIR/bin:$PATH"
+# ensure `python` resolves to venv for convert/download helpers
+hash -r 2>/dev/null || true
 
 echo ""
 echo "Activate: source $VENV_DIR/bin/activate"
