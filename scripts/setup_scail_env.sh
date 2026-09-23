@@ -117,16 +117,15 @@ if [[ "$DOWNLOAD_WEIGHTS" -eq 1 ]]; then
   echo "==> Downloading zai-org/SCAIL-2 (~82 GiB). This is intentional and large."
   echo "    HF user tip: token at ~/.cache/huggingface/token (login as 128bytes8 if needed)."
   mkdir -p "$MODELS_DIR"
-  if command -v hf >/dev/null 2>&1; then
-    hf download zai-org/SCAIL-2 --local-dir "$MODELS_DIR/hf-SCAIL-2"
-  else
-    python - <<PY
+  export SCAIL_DEST="$MODELS_DIR/hf-SCAIL-2"
+  "$PY" - <<'PY'
 from huggingface_hub import snapshot_download
-print("snapshot_download zai-org/SCAIL-2 → $MODELS_DIR/hf-SCAIL-2")
-snapshot_download("zai-org/SCAIL-2", local_dir="$MODELS_DIR/hf-SCAIL-2")
+import os
+dest = os.environ["SCAIL_DEST"]
+print(f"snapshot_download zai-org/SCAIL-2 → {dest}")
+snapshot_download("zai-org/SCAIL-2", local_dir=dest)
 print("done")
 PY
-  fi
   CONVERT=1
 fi
 
@@ -146,7 +145,7 @@ if [[ "$CONVERT" -eq 1 ]]; then
   fi
   OUT="$MODELS_DIR/SCAIL-2.safetensors"
   echo "==> convert.py → $OUT"
-  (cd "$SCAIL_REPO" && python convert.py --scail-dir "$CKPT" --save-path "$OUT")
+  (cd "$SCAIL_REPO" && "$PY" convert.py --scail-dir "$CKPT" --save-path "$OUT")
 fi
 
 export PATH="$VENV_DIR/bin:$PATH"
