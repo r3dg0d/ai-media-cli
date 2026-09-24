@@ -22,8 +22,8 @@ set -euo pipefail
 VENV="${VENV_DIR}"
 export AI_MEDIA_SCAIL_VENV="\$VENV"
 export AI_MEDIA_SCAIL_REPO="\${AI_MEDIA_SCAIL_REPO:-${SCAIL_REPO}}"
-# NixOS NVIDIA + typical CUDA libs
-export LD_LIBRARY_PATH="/run/opengl-driver/lib:/nix/store/604gsr59rj7dzd0nrhp143rpvf7gyiaz-gcc-15.3.0-lib/lib\${LD_LIBRARY_PATH:+:\$LD_LIBRARY_PATH}"
+# NixOS NVIDIA libs; AI_MEDIA_EXTRA_LD_PATH (at install time) adds e.g. gcc-lib for libstdc++
+export LD_LIBRARY_PATH="/run/opengl-driver/lib${AI_MEDIA_EXTRA_LD_PATH:+:$AI_MEDIA_EXTRA_LD_PATH}\${LD_LIBRARY_PATH:+:\$LD_LIBRARY_PATH}"
 export TRITON_LIBCUDA_PATH="/run/opengl-driver/lib"
 if [[ -d "\$AI_MEDIA_SCAIL_REPO" ]]; then
   export PYTHONPATH="\$AI_MEDIA_SCAIL_REPO\${PYTHONPATH:+:\$PYTHONPATH}"

@@ -51,6 +51,22 @@ editvideo --help
 ai-media doctor
 ```
 
+## NixOS
+
+pip CUDA wheels need the driver libs on the loader path:
+
+```bash
+export LD_LIBRARY_PATH=/run/opengl-driver/lib:$LD_LIBRARY_PATH
+export TRITON_LIBCUDA_PATH=/run/opengl-driver/lib
+```
+
+If torch/triton can't find `libstdc++`, set `AI_MEDIA_EXTRA_LD_PATH` to your
+gcc-lib `lib/` dir before running the setup / wrapper-install scripts.
+
+## Related
+
+Text-to-video lives in its own repo: [r3dg0d/text2video](https://github.com/r3dg0d/text2video).
+
 ## Terminal image preview
 
 `TerminalImageRenderer` prefers Kitty graphics protocol, then chafa, then ANSI

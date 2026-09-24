@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-import json
-from pathlib import Path
-
 import pytest
 
 from ai_media.editvideo.backend import GenerateRequest, ScailNotReadyError, build_generate_argv

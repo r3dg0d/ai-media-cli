@@ -45,13 +45,12 @@ Last updated: 2026-09-22 01:03 PT
 - Cloud inference APIs
 - Secrets / credentials
 
-## 2026-09-22 — text2img / img2img working on zionsec
+## 2026-09-22 — text2img / img2img working on an RTX 4090 (NixOS)
 
 - Backend: BF16 + `enable_sequential_cpu_offload()` + `use_kv_cache=False` + `true_cfg_scale`
 - Proven CLI runs:
   - `text2img` → `~/Pictures/AI/text2img/cli-fox-seed7.png` (512², 8 steps, ~29s)
   - `img2img` → `~/Pictures/AI/img2img/astronaut-watercolor-seed9.png` (1024², 8 steps, ~79s)
-- AllTalk purged (nixos system-90); ComfyUI already removed
 
 ## 2026-09-22 — preview + TRELLIS stack
 

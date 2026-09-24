@@ -50,7 +50,9 @@ def build_parser() -> argparse.ArgumentParser:
     run_p.add_argument("--t5-cpu", action=argparse.BooleanOptionalAction, default=True)
     run_p.add_argument("--replace", action="store_true")
     run_p.add_argument("-o", "--output", default=None)
-    run_p.add_argument("--open", dest="do_open", action=argparse.BooleanOptionalAction, default=True)
+    run_p.add_argument(
+        "--open", dest="do_open", action=argparse.BooleanOptionalAction, default=True
+    )
     run_p.add_argument("--dry-run", action="store_true")
 
     smoke = sub.add_parser("smoke", help="Short smoke using example animation_001")

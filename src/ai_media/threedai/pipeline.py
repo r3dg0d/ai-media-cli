@@ -54,8 +54,9 @@ def run_pipeline(
         result = _run_stage(job, name)
         if name == "reconstruct":
             if result.get("status") == "error":
-                advance(job, Stage.FAILED, "failed", reason=result.get("error", "reconstruct failed"))
-                raise RuntimeError(result.get("error", "reconstruct failed"))
+                err = result.get("error", "reconstruct failed")
+                advance(job, Stage.FAILED, "failed", reason=err)
+                raise RuntimeError(err)
             if result.get("status") == "ok":
                 has_mesh = True
             else:

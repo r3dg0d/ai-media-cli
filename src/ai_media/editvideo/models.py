@@ -29,7 +29,10 @@ REGISTRY = [
     ),
     ModelRef(
         name="SCAIL-1.3B",
-        purpose="Smaller SCAIL config present in wan code; official weights NOT published for SCAIL-2",
+        purpose=(
+            "Smaller SCAIL config present in wan code; "
+            "official weights NOT published for SCAIL-2"
+        ),
         install_hint=(
             "generate.py accepts --model SCAIL-1.3B and configs/config-1.3b.json exists, "
             "but zai-org/SCAIL-2 only ships the 14B checkpoint. No separate 1.3B HF repo. "

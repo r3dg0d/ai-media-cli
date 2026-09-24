@@ -11,12 +11,26 @@ def test_refuse_cloud():
     assert refuse_cloud("/tmp/local.png").ok is True
 
 
-def test_pipeline_local(xdg_tmp, tmp_path):
+@pytest.fixture()
+def trellis_absent(monkeypatch):
+    from ai_media.trellis.backend import TrellisBackend
+
+    monkeypatch.setattr(TrellisBackend, "doctor", lambda self: {"status": "missing"})
+
+
+def test_pipeline_local(xdg_tmp, tmp_path, trellis_absent):
     img = tmp_path / "in.png"
     img.write_bytes(b"\x89PNG\r\n\x1a\n")
-    job = run_pipeline(str(img), stages=["ingest", "reconstruct", "package"])
+    job = run_pipeline(str(img), stages=["ingest", "reconstruct"])
     assert job.state_path().is_file()
     assert (job.dir / "ingest.json").is_file()
+
+
+def test_pipeline_package_needs_mesh(xdg_tmp, tmp_path, trellis_absent):
+    img = tmp_path / "in.png"
+    img.write_bytes(b"\x89PNG\r\n\x1a\n")
+    with pytest.raises(RuntimeError, match="requires a local mesh"):
+        run_pipeline(str(img), stages=["ingest", "reconstruct", "package"])
 
 
 def test_pipeline_blocks_url(xdg_tmp):

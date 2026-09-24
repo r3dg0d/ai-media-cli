@@ -264,7 +264,7 @@ class QwenBackend:
         self._pipeline_class = type(pipe).__name__
 
         # On ≤24GB VRAM, model_cpu_offload OOMs (~17GB peak then kill).
-        # Proven path on zionsec RTX 4090: sequential_cpu_offload + use_kv_cache=False.
+        # Proven path on an RTX 4090 (24 GB): sequential_cpu_offload + use_kv_cache=False.
         if self._should_cpu_offload(memory_profile):
             # ≤24GB: sequential only. model_cpu_offload peaked ~17GB RAM then OOM-killed.
             pipe.enable_sequential_cpu_offload()

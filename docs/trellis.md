@@ -2,7 +2,7 @@
 
 Image → textured 3D (O-Voxel → GLB) via `microsoft/TRELLIS.2-4B` (MIT).
 
-## Setup on NixOS (zionsec)
+## Setup on NixOS
 
 ```bash
 ./scripts/setup_trellis_env.sh

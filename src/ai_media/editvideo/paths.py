@@ -7,11 +7,9 @@ from pathlib import Path
 
 from ai_media.shared.config import xdg_cache_home, xdg_data_home
 
-
 HF_REPO_ID = "zai-org/SCAIL-2"
 DEFAULT_SCAIL_REPO_CANDIDATES = (
     Path.home() / "Projects" / "SCAIL-2",
-    Path("/home/neo/Projects/SCAIL-2"),
 )
 
 

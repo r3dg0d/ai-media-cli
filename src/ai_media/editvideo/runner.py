@@ -8,10 +8,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from ai_media.editvideo import paths
 from ai_media.editvideo.backend import GenerateRequest, ScailNotReadyError, run_generate
 from ai_media.editvideo.jobs import new_job
 from ai_media.editvideo.models import default_model
-from ai_media.editvideo import paths
 from ai_media.editvideo.preprocess import write_probe
 from ai_media.shared.jobs import Job
 from ai_media.shared.media_preview import prompt_open_video

@@ -16,7 +16,7 @@ if [[ ! -x "$ENV/bin/python" ]]; then
   uv venv "$ENV" --python "${AI_MEDIA_PYTHON:-python3.11}"
 fi
 
-export LD_LIBRARY_PATH="/run/opengl-driver/lib:/nix/store/604gsr59rj7dzd0nrhp143rpvf7gyiaz-gcc-15.3.0-lib/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+export LD_LIBRARY_PATH="/run/opengl-driver/lib${AI_MEDIA_EXTRA_LD_PATH:+:$AI_MEDIA_EXTRA_LD_PATH}${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 export TRITON_LIBCUDA_PATH=/run/opengl-driver/lib
 export UV_LINK_MODE=copy
 export ATTN_BACKEND="${ATTN_BACKEND:-xformers}"

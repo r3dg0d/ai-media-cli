@@ -4,11 +4,8 @@ from __future__ import annotations
 
 import importlib.util
 import json
-import os
 import shutil
-import subprocess
 import sys
-from pathlib import Path
 from typing import Any
 
 from ai_media.editvideo import paths
@@ -124,7 +121,9 @@ def doctor(*, as_json: bool = True) -> dict[str, Any]:
         blockers.append("SCAIL-2 repo with generate.py not found (set AI_MEDIA_SCAIL_REPO)")
     if not weights.get("ready_ckpt_only"):
         ready = False
-        blockers.append("SCAIL-2 weights missing (run scripts/setup_scail_env.sh --download-weights)")
+        blockers.append(
+            "SCAIL-2 weights missing (run scripts/setup_scail_env.sh --download-weights)"
+        )
     if not weights.get("safetensors"):
         # wan branch typically needs convert; warn hard but allow doctor ready=False
         ready = False

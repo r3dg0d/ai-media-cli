@@ -9,7 +9,7 @@ description = "Local-first AI media CLI suite: Qwen image, TRELLIS 3D, 3dai, edi
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
-authors = [{ name = "Vincent", email = "r3dg0d@users.noreply.github.com" }]
+authors = [{ name = "Vincent", email = "192937334+r3dg0d@users.noreply.github.com" }]
 keywords = ["ai", "cli", "image-generation", "qwen", "trellis", "terminal"]
 classifiers = [
   "Development Status :: 3 - Alpha",
