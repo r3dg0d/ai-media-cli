@@ -15,7 +15,9 @@ Cloud URLs are refused. Weights are **not** bundled.
 | **flash_attn** | Listed in upstream `requirements.txt`; may fail to build on NixOS. Setup script installs it best-effort. |
 | **wan branch** | After `hf download`, run `convert.py` → `SCAIL-2.safetensors` before generate. |
 
-## Setup (zionsec / NixOS)
+**Convert note:** the FSDP `.pt` is ~62 GiB. On ~32 GiB RAM hosts, use `scripts/convert_scail_streaming.py` (wired from `setup_scail_env.sh --convert`) instead of upstream `convert.py` / full-file mmap. Also requires `weights_only=False` semantics for numpy pickles in the zip.
+
+## Setup (NixOS)
 
 ```bash
 # 1) SCAIL clone (already expected at ~/Projects/SCAIL-2 @ wan-scail2)
@@ -61,7 +63,7 @@ editvideo smoke --example animation_001 --steps 20
 editvideo smoke --dry-run
 ```
 
-Long GPU jobs on zionsec:
+Long GPU jobs:
 
 ```bash
 systemd-run --user --unit=editvideo-smoke \

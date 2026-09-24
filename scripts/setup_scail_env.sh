@@ -6,7 +6,7 @@
 # Models:     ${XDG_DATA_HOME:-$HOME/.local/share}/ai-media/models/scail-2
 # Repo:       $AI_MEDIA_SCAIL_REPO or ~/Projects/SCAIL-2
 #
-# Torch index: cu128 by default (match trellis/qwen envs on zionsec).
+# Torch index: cu128 by default (match the trellis/qwen envs).
 #
 set -euo pipefail
 
@@ -115,7 +115,7 @@ fi
 if [[ "$DOWNLOAD_WEIGHTS" -eq 1 ]]; then
   echo ""
   echo "==> Downloading zai-org/SCAIL-2 (~82 GiB). This is intentional and large."
-  echo "    HF user tip: token at ~/.cache/huggingface/token (login as 128bytes8 if needed)."
+  echo "    HF user tip: token at ~/.cache/huggingface/token (run `hf auth login` if needed)."
   mkdir -p "$MODELS_DIR"
   export SCAIL_DEST="$MODELS_DIR/hf-SCAIL-2"
   "$PY" - <<'PY'
@@ -144,8 +144,59 @@ if [[ "$CONVERT" -eq 1 ]]; then
     exit 2
   fi
   OUT="$MODELS_DIR/SCAIL-2.safetensors"
+  # PyTorch >=2.6: convert.py must use weights_only=False (numpy in ckpt) + mmap.
+  if ! grep -q 'weights_only=False' "$SCAIL_REPO/convert.py"; then
+    echo "==> patching $SCAIL_REPO/convert.py for torch.load(weights_only=False, mmap=True)"
+    export SCAIL_REPO
+    "$PY" - <<'PATCHPY'
+from pathlib import Path
+import os
+p = Path(os.environ["SCAIL_REPO"]) / "convert.py"
+t = p.read_text()
+old = "   checkpoint = torch.load(pt_file_path)"
+new = """   checkpoint = torch.load(
+       pt_file_path,
+       map_location=\"cpu\",
+       weights_only=False,
+       mmap=True,
+   )"""
+if old in t:
+    p.write_text(t.replace(old, new, 1))
+    print("patched")
+elif "weights_only=False" in t:
+    print("already patched")
+else:
+    raise SystemExit("convert.py torch.load pattern not found; patch manually")
+PATCHPY
+  fi
   echo "==> convert.py → $OUT"
-  (cd "$SCAIL_REPO" && "$PY" convert.py --scail-dir "$CKPT" --save-path "$OUT")
+  # 62GiB .pt needs more than 31GiB RAM; create temporary swap if none.
+  if [[ "$(awk '/SwapTotal/{print $2}' /proc/meminfo)" -lt 1048576 ]]; then
+    SWAPFILE="${AI_MEDIA_CONVERT_SWAP:-$HOME/.local/share/ai-media/tmp/scail-convert.swap}"
+    mkdir -p "$(dirname "$SWAPFILE")"
+    if [[ ! -f "$SWAPFILE" ]]; then
+      echo "==> creating temporary 96GiB swap at $SWAPFILE (no system swap; needed for convert)"
+      fallocate -l 96G "$SWAPFILE" || dd if=/dev/zero of="$SWAPFILE" bs=1G count=96 status=progress
+      chmod 600 "$SWAPFILE"
+    fi
+    if ! swapon --show=NAME --noheadings 2>/dev/null | grep -qx "$SWAPFILE"; then
+      echo "==> enabling swap $SWAPFILE"
+      if ! swapon "$SWAPFILE" 2>/dev/null; then
+        sudo -n swapon "$SWAPFILE" || {
+          echo "ERROR: cannot enable swap for convert. Run: sudo swapon $SWAPFILE" >&2
+          exit 3
+        }
+      fi
+    fi
+  fi
+  PT="$CKPT/model/1/fsdp2_rank_0000_checkpoint.pt"
+  if [[ ! -f "$PT" ]]; then
+    echo "ERROR: missing $PT" >&2
+    exit 2
+  fi
+  # Low-RAM streaming convert (hosts ~32GB RAM cannot mmap the 62GiB zip).
+  ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+  "$PY" "$ROOT/scripts/convert_scail_streaming.py" --pt "$PT" --save-path "$OUT" --scail-repo "$SCAIL_REPO"
 fi
 
 export PATH="$VENV_DIR/bin:$PATH"
