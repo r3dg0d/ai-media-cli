@@ -26,6 +26,8 @@ that shadows LLaDA when `~/.local/bin` is prepended in `.bashrc`. Use:
 # → ~/.local/bin/text2img-qwen
 # → ~/.local/bin/img2img-qwen
 # → ~/.local/bin/ai-media
+# Optional on machines without system LLaDA:
+# INSTALL_AS_TEXT2IMG=1 ./scripts/install_qwen_wrappers.sh
 ```
 
 | Name on PATH | Engine |

@@ -45,3 +45,17 @@ result-*
 # Casts / large demos (keep .gitkeep)
 demos/casts/*
 !demos/casts/.gitkeep
+
+# Extra caches / secrets / large local state
+.cache/
+__pycache__/
+*.gguf
+*.engine
+*.onnx
+secrets.env
+*.pem
+*.key
+huggingface/
+.hf_home/
+.torch/
+wandb/
