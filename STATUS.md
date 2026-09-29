@@ -1,6 +1,6 @@
 # Status — ai-media-cli 0.1.0
 
-Last updated: 2026-09-22 01:03 PT
+Last updated: 2026-09-29 02:57 PT (Phase 4 PATH / wrappers)
 
 ## Implemented (unit-testable, no GPU)
 
@@ -51,6 +51,15 @@ Last updated: 2026-09-22 01:03 PT
 - Proven CLI runs:
   - `text2img` → `~/Pictures/AI/text2img/cli-fox-seed7.png` (512², 8 steps, ~29s)
   - `img2img` → `~/Pictures/AI/img2img/astronaut-watercolor-seed9.png` (1024², 8 steps, ~79s)
+
+## 2026-09-29 — Phase 4 PATH honesty (zionsec)
+
+- System `text2img` / `img2img` = **llada-cli** (do not shadow from `~/.local/bin`).
+- Qwen exposed as `text2img-qwen` / `img2img-qwen` via `scripts/install_qwen_wrappers.sh`.
+- Umbrella `~/.local/bin/ai-media` → XDG qwen venv `ai-media doctor`.
+- Desktop entries: `~/.local/share/applications/matrix-ai-*.desktop` (help/doctor only).
+- GitHub: local repo has **no origin** yet; `r3dg0d/ai-media-cli` not published — docs updated locally only.
+- Full Nix of Qwen/TRELLIS/SCAIL still blocked (CUDA wheels + huge weights); keep venv wrappers.
 
 ## 2026-09-22 — preview + TRELLIS stack
 

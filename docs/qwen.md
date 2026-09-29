@@ -7,6 +7,12 @@
 - NixOS: `export LD_LIBRARY_PATH=/run/opengl-driver/lib`
 - CLIs: `text2img`, `img2img`
 
+
+## NixOS PATH (zionsec)
+
+Install wrappers as **`text2img-qwen` / `img2img-qwen`** (`scripts/install_qwen_wrappers.sh`).
+Do not place Qwen as `~/.local/bin/text2img` — that shadows system LLaDA (`llada-cli`).
+
 ## Memory
 
 - ≤24GB (e.g. RTX 4090): always `enable_model_cpu_offload()`

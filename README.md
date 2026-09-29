@@ -4,20 +4,40 @@ Local-first AI media CLI suite for Vincent ([@r3dg0d](https://github.com/r3dg0d)
 
 | Command | Role |
 | ------- | ---- |
-| `text2img` | Qwen-Image-2.1 text → image |
-| `img2img` | Qwen-Image-2.1 image edit / img2img |
-| `3dai` | Multi-stage 3D asset pipeline (local, fail-closed) |
+| `text2img` / `img2img` *(Python entry points)* | Qwen-Image-2.1 text → image / edit |
+| `text2img-qwen` / `img2img-qwen` *(NixOS wrappers)* | Same Qwen CLIs without shadowing system LLaDA |
+| `3dai` | Multi-stage 3D asset pipeline (TRELLIS.2, fail-closed) |
 | `editvideo` | SCAIL-2 character animation / video jobs |
 | `ai-media doctor` | Environment / GPU / graphics diagnostics |
 
 Model weights are **not** bundled. Shared infrastructure (terminal graphics,
 preview, config, Rich UX, nvidia-smi parsing) works without a GPU.
 
+## Workstation PATH note (NixOS / zionsec)
+
+On this machine, **system** `text2img` / `img2img` / `llada-image` come from
+**llada-cli** (LLaDA-Image Turbo) via `modules/local-ai-tools.nix`.
+
+ai-media’s Qwen CLIs must **not** be installed as `~/.local/bin/text2img` —
+that shadows LLaDA when `~/.local/bin` is prepended in `.bashrc`. Use:
+
+```bash
+./scripts/install_qwen_wrappers.sh
+# → ~/.local/bin/text2img-qwen
+# → ~/.local/bin/img2img-qwen
+# → ~/.local/bin/ai-media
+```
+
+| Name on PATH | Engine |
+| ------------ | ------ |
+| `text2img` / `img2img` | LLaDA (Nix system package) |
+| `text2img-qwen` / `img2img-qwen` | Qwen-Image-2.1 (this repo + XDG venv) |
+
 ## Install
 
 ```bash
-git clone https://github.com/r3dg0d/ai-media-cli.git
-cd ai-media-cli
+git clone https://github.com/r3dg0d/ai-media-cli.git   # when published
+cd ai-media-cli   # or: cd ~/Projects/ai-media
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 pytest -q
@@ -28,6 +48,8 @@ Optional Qwen deps (GPU machine):
 ```bash
 ./scripts/setup_qwen_env.sh
 pip install -e ".[qwen]"
+./scripts/install_qwen_wrappers.sh
+text2img-qwen --doctor
 ```
 
 Optional SCAIL-2 / editvideo (GPU machine, weights explicit):
@@ -43,25 +65,24 @@ editvideo smoke --example animation_001 --steps 20
 ## Quick examples
 
 ```bash
-text2img --help
-text2img --doctor
-img2img --help
+text2img-qwen --help
+text2img-qwen --doctor
+img2img-qwen --help
 3dai --help
 editvideo --help
 ai-media doctor
 ```
 
-## NixOS
+## NixOS packaging status
 
-pip CUDA wheels need the driver libs on the loader path:
+| Piece | Status |
+| ----- | ------ |
+| llada-cli (`text2img`/`img2img`/`llada-image`) | **Already Nix** — thin wrapper → existing LLaDA venv (`local-ai-tools.nix`) |
+| aiwmremover | **Already Nix** — same pattern |
+| Qwen / TRELLIS / SCAIL engines | **Not fully Nixified** — pip CUDA wheels + custom CUDA exts + multi-GB weights live in XDG venvs; wrappers only |
+| Full store packaging of models | **Blocked** — do not re-download huge weights into the Nix store |
 
-```bash
-export LD_LIBRARY_PATH=/run/opengl-driver/lib:$LD_LIBRARY_PATH
-export TRITON_LIBCUDA_PATH=/run/opengl-driver/lib
-```
-
-If torch/triton can't find `libstdc++`, set `AI_MEDIA_EXTRA_LD_PATH` to your
-gcc-lib `lib/` dir before running the setup / wrapper-install scripts.
+Prefer `scripts/install_*_wrapper.sh` over rewriting engines.
 
 ## Related
 
@@ -78,5 +99,4 @@ XDG path: `~/.config/ai-media/config.toml` (created with defaults on first load)
 
 ## Status
 
-See [STATUS.md](STATUS.md) for implemented vs GPU-pending work.
-License: [MIT](LICENSE). Third-party model notices: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+See [STATUS.md](STATUS.md).
