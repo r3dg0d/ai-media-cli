@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Image CLI validation now fails before backend probing. Invalid aspect ratios,
+  steps, dimensions, strength, and non-finite guidance produce usage errors.
+- Backend readiness, CUDA, and file errors are reported once on stderr,
+  including in quiet mode. `--debug` preserves runtime tracebacks.
+
 ### Changed
 
 - NixOS wrappers: Qwen CLIs install as `text2img-qwen` / `img2img-qwen` so they

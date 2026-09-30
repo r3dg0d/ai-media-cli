@@ -97,6 +97,12 @@ blocks, else none (non-TTY). Animations stop cleanly before pixels are written.
 
 ## Config
 
+Image commands report invalid generation settings with exit code 2. Backend
+readiness and CUDA failures also use code 2; file I/O failures use code 1.
+Errors go to stderr even with `--quiet`; use `--debug` for runtime tracebacks.
+Aspect ratios must have positive, finite components (for example `16:9`),
+and explicit aspect dimensions must be at least 64 pixels (`768x512`).
+
 XDG path: `~/.config/ai-media/config.toml` (created with defaults on first load).
 
 ## Status

@@ -6,7 +6,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from ai_media.qwen.backend import GenerateRequest, QwenBackend, QwenNotInstalledError
+from ai_media.qwen.backend import GenerateRequest, QwenBackend
 from ai_media.qwen.prompting import enhance_prompt
 from ai_media.shared.animation import BounceAnimation
 from ai_media.shared.config import Config
@@ -14,7 +14,7 @@ from ai_media.shared.media_preview import maybe_open_image, preview_image
 from ai_media.shared.metadata import write_sidecar
 from ai_media.shared.monitoring import Monitor
 from ai_media.shared.output import default_output_path
-from ai_media.shared.ui import error, success
+from ai_media.shared.ui import success
 
 
 def run_text2img(
@@ -38,6 +38,7 @@ def run_text2img(
     guidance_scale: float = 4.0,
     cfg: Config | None = None,
     backend: QwenBackend | None = None,
+    model_id: str | None = None,
 ) -> Path:
     prompt = enhance_prompt(prompt, enabled=enhance)
     out = output or default_output_path(
@@ -46,33 +47,28 @@ def run_text2img(
         ext=fmt,
         seed=seed,
     )
+    req = GenerateRequest(
+        prompt=prompt,
+        negative_prompt=negative_prompt,
+        seed=seed,
+        steps=steps,
+        width=width,
+        height=height,
+        guidance_scale=guidance_scale,
+        transparent=transparent,
+        output=out,
+        memory_profile=memory,
+        enhance_prompt=enhance,
+    )
+    be = backend or QwenBackend(model_id=model_id)
     mon = Monitor(enabled=monitor)
     mon.snapshot("start")
     anim = BounceAnimation("Generating image", enabled=not quiet)
     anim.start()
-    be = backend or QwenBackend()
     try:
-        req = GenerateRequest(
-            prompt=prompt,
-            negative_prompt=negative_prompt,
-            seed=seed,
-            steps=steps,
-            width=width,
-            height=height,
-            guidance_scale=guidance_scale,
-            transparent=transparent,
-            output=out,
-            memory_profile=memory,
-            enhance_prompt=enhance,
-        )
         t0 = time.perf_counter()
         path = be.generate(req)
         elapsed = time.perf_counter() - t0
-    except QwenNotInstalledError as e:
-        anim.stop()
-        if not quiet:
-            error(str(e))
-        raise
     finally:
         # Always stop animation before any preview/render
         anim.stop()

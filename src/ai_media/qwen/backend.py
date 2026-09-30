@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
+from math import isfinite
 from pathlib import Path
 from typing import Any, Protocol
 
@@ -79,8 +80,8 @@ class GenerateRequest:
                 f"memory_profile must be one of {sorted(_VALID_MEMORY)}, "
                 f"got {self.memory_profile!r}"
             )
-        if self.guidance_scale <= 0:
-            raise ValueError("guidance_scale must be > 0")
+        if not isfinite(self.guidance_scale) or self.guidance_scale <= 0:
+            raise ValueError("guidance_scale must be finite and > 0")
         if self.output is not None and not isinstance(self.output, Path):
             self.output = Path(self.output)
         if self.image is not None and not isinstance(self.image, Path):

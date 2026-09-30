@@ -9,12 +9,12 @@ import time
 from pathlib import Path
 
 from ai_media import __version__
-from ai_media.qwen.backend import QwenBackend, QwenNotInstalledError
+from ai_media.qwen.backend import QwenBackend, QwenCudaRequiredError, QwenNotInstalledError
 from ai_media.qwen.editing import run_img2img
 from ai_media.shared.config import load_config
 from ai_media.shared.diagnostics import run_doctor
 from ai_media.shared.signals import install_sigint_handler
-from ai_media.shared.ui import banner, error
+from ai_media.shared.ui import banner
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -76,7 +76,10 @@ def main(argv: list[str] | None = None) -> None:
     if not prompt or not args.image:
         parser.error("--image and prompt are required (unless --doctor / --version)")
 
-    cfg = load_config(create=True)
+    try:
+        cfg = load_config(create=True)
+    except (OSError, ValueError) as e:
+        parser.error(f"could not load config: {e}")
     steps = args.steps if args.steps is not None else cfg.default_steps
     memory = args.memory or cfg.memory_profile
     fmt = args.fmt or cfg.default_format
@@ -109,14 +112,21 @@ def main(argv: list[str] | None = None) -> None:
             negative_prompt=args.negative_prompt,
             guidance_scale=args.guidance_scale,
             cfg=cfg,
-            backend=QwenBackend(model_id=args.model) if args.model else None,
+            model_id=args.model,
         )
-    except QwenNotInstalledError as e:
-        if not args.quiet:
-            error(str(e))
+    except ValueError as e:
+        if args.debug:
+            raise
+        parser.error(str(e))
+    except (QwenNotInstalledError, QwenCudaRequiredError) as e:
+        if args.debug:
+            raise
+        print(f"error: {e}", file=sys.stderr)
         sys.exit(2)
-    except FileNotFoundError as e:
-        error(str(e))
+    except OSError as e:
+        if args.debug:
+            raise
+        print(f"error: {e}", file=sys.stderr)
         sys.exit(1)
     except KeyboardInterrupt:
         sys.exit(130)

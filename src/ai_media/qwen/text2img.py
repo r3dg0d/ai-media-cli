@@ -8,13 +8,13 @@ import sys
 import time
 
 from ai_media import __version__
-from ai_media.qwen.backend import QwenBackend, QwenNotInstalledError
+from ai_media.qwen.backend import QwenBackend, QwenCudaRequiredError, QwenNotInstalledError
 from ai_media.qwen.generation import run_text2img
 from ai_media.qwen.prompting import aspect_to_size
 from ai_media.shared.config import load_config
 from ai_media.shared.diagnostics import run_doctor
 from ai_media.shared.signals import install_sigint_handler
-from ai_media.shared.ui import banner, error
+from ai_media.shared.ui import banner
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -82,11 +82,17 @@ def main(argv: list[str] | None = None) -> None:
     if not prompt:
         parser.error("prompt is required (unless --doctor / --version)")
 
-    cfg = load_config(create=True)
+    try:
+        cfg = load_config(create=True)
+    except (OSError, ValueError) as e:
+        parser.error(f"could not load config: {e}")
     width = args.width if args.width is not None else cfg.default_width
     height = args.height if args.height is not None else cfg.default_height
     if args.aspect:
-        width, height = aspect_to_size(args.aspect, native=args.native_aspect)
+        try:
+            width, height = aspect_to_size(args.aspect, native=args.native_aspect)
+        except ValueError as e:
+            parser.error(f"--aspect: {e}")
     steps = args.steps if args.steps is not None else cfg.default_steps
     memory = args.memory or cfg.memory_profile
     fmt = args.fmt or cfg.default_format
@@ -119,12 +125,22 @@ def main(argv: list[str] | None = None) -> None:
             negative_prompt=args.negative_prompt,
             guidance_scale=args.guidance_scale,
             cfg=cfg,
-            backend=QwenBackend(model_id=args.model) if args.model else None,
+            model_id=args.model,
         )
-    except QwenNotInstalledError as e:
-        if not args.quiet:
-            error(str(e))
+    except ValueError as e:
+        if args.debug:
+            raise
+        parser.error(str(e))
+    except (QwenNotInstalledError, QwenCudaRequiredError) as e:
+        if args.debug:
+            raise
+        print(f"error: {e}", file=sys.stderr)
         sys.exit(2)
+    except OSError as e:
+        if args.debug:
+            raise
+        print(f"error: {e}", file=sys.stderr)
+        sys.exit(1)
     except KeyboardInterrupt:
         sys.exit(130)
 

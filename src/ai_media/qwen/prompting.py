@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from math import isfinite
+
 # Native 2K aspect table from Qwen-Image-2.1 upstream README / research memo.
 NATIVE_ASPECT_RATIOS: dict[str, tuple[int, int]] = {
     "1:1": (2048, 2048),
@@ -63,16 +65,21 @@ def aspect_to_size(
         return _round64(w), _round64(h)
     if "x" in aspect:
         a, b = aspect.split("x", 1)
-        return _round64(int(a)), _round64(int(b))
+        w, h = int(a), int(b)
+        if w < 64 or h < 64:
+            raise ValueError("aspect dimensions must be >= 64")
+        return _round64(w), _round64(h)
     if ":" in aspect:
         a, b = aspect.split(":", 1)
         aw, ah = float(a), float(b)
+        if not (isfinite(aw) and isfinite(ah) and aw > 0 and ah > 0):
+            raise ValueError("aspect ratio components must be finite and > 0")
         if aw >= ah:
             w = base
-            h = int(base * ah / aw)
+            h = int(base * (ah / aw))
         else:
             h = base
-            w = int(base * aw / ah)
+            w = int(base * (aw / ah))
         return _round64(w), _round64(h)
     raise ValueError(f"unknown aspect: {aspect}")
 
