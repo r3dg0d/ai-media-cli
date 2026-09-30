@@ -26,45 +26,46 @@ def run_pipeline(
         raise RuntimeError(g2.reason)
 
     job = create_job(input=input_path)
-    # Copy a tiny marker into job dir
-    marker = job.dir / "input_ref.txt"
-    marker.write_text(str(Path(input_path).resolve()) + "\n", encoding="utf-8")
+    with job.cancel_on_interrupt():
+        # Copy a tiny marker into job dir
+        marker = job.dir / "input_ref.txt"
+        marker.write_text(str(Path(input_path).resolve()) + "\n", encoding="utf-8")
 
-    planned = stages or [
-        "ingest",
-        "reconstruct",
-        "retopo",
-        "uv",
-        "bake",
-        "texture",
-        "critique",
-        "package",
-    ]
-    has_mesh = False
-    for name in planned:
-        pre = check_stage_preconditions(name, has_mesh=has_mesh)
-        if not pre.ok and name != "ingest" and name != "reconstruct":
-            # reconstruct is stubbed as producing a placeholder mesh json
+        planned = stages or [
+            "ingest",
+            "reconstruct",
+            "retopo",
+            "uv",
+            "bake",
+            "texture",
+            "critique",
+            "package",
+        ]
+        has_mesh = False
+        for name in planned:
+            pre = check_stage_preconditions(name, has_mesh=has_mesh)
+            if not pre.ok and name != "ingest" and name != "reconstruct":
+                # reconstruct is stubbed as producing a placeholder mesh json
+                if name == "reconstruct":
+                    pass
+                else:
+                    advance(job, Stage.FAILED, "failed", reason=pre.reason)
+                    raise RuntimeError(pre.reason)
+            stage = Stage(name) if name in Stage._value2member_map_ else Stage.INGEST
+            result = _run_stage(job, name)
             if name == "reconstruct":
-                pass
-            else:
-                advance(job, Stage.FAILED, "failed", reason=pre.reason)
-                raise RuntimeError(pre.reason)
-        stage = Stage(name) if name in Stage._value2member_map_ else Stage.INGEST
-        result = _run_stage(job, name)
-        if name == "reconstruct":
-            if result.get("status") == "error":
-                err = result.get("error", "reconstruct failed")
-                advance(job, Stage.FAILED, "failed", reason=err)
-                raise RuntimeError(err)
-            if result.get("status") == "ok":
-                has_mesh = True
-            else:
-                # skipped — still continue but note no mesh
-                has_mesh = False
-        advance(job, stage, "done", result=result)
-    advance(job, Stage.DONE, "done")
-    return job
+                if result.get("status") == "error":
+                    err = result.get("error", "reconstruct failed")
+                    advance(job, Stage.FAILED, "failed", reason=err)
+                    raise RuntimeError(err)
+                if result.get("status") == "ok":
+                    has_mesh = True
+                else:
+                    # skipped — still continue but note no mesh
+                    has_mesh = False
+            advance(job, stage, "done", result=result)
+        advance(job, Stage.DONE, "done")
+        return job
 
 
 def _run_stage(job: Job, name: str) -> dict[str, Any]:

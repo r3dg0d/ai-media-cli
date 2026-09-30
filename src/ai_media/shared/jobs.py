@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import json
+import sys
 import uuid
+from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -65,6 +68,20 @@ class Job:
             # caller may set completed explicitly
             pass
         self.save()
+
+    @contextmanager
+    def cancel_on_interrupt(self) -> Iterator[None]:
+        """Persist cancellation of active work, then preserve the interrupt."""
+        try:
+            yield
+        except KeyboardInterrupt:
+            if self.status not in {"completed", "done", "planned", "dry_run"}:
+                try:
+                    self.add_stage("interrupt", "cancelled")
+                except Exception as error:
+                    # Storage errors must not hide the original cancellation.
+                    print(f"warning: could not record cancelled job: {error}", file=sys.stderr)
+            raise
 
     @classmethod
     def create(cls, tool: str, **meta: Any) -> Job:

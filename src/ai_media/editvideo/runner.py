@@ -69,27 +69,30 @@ def run_edit(
             raise FileNotFoundError(path)
         # Legacy preprocess-only mode when SCAIL inputs are incomplete
         job = new_job(video=str(path.resolve()), prompt=prompt, mode="preprocess_only")
-        job.add_stage("preprocess", "running")
-        probe_path = write_probe(path, job.dir / "probe.json")
-        job.add_stage("preprocess", "done", path=str(probe_path))
-        job.add_stage(
-            "models",
-            "skipped",
-            reason=(
-                "need --example NAME or --image/--mask-image/--pose/--mask-video "
-                "for SCAIL-2 generate"
-            ),
-        )
-        plan = {
-            "prompt": prompt,
-            "stages": ["preprocess"],
-            "cloud": False,
-            "note": "preprocess-only; no generate",
-        }
-        (job.dir / "plan.json").write_text(json.dumps(plan, indent=2) + "\n", encoding="utf-8")
-        job.status = "planned"
-        job.save()
-        return job
+        with job.cancel_on_interrupt():
+            job.add_stage("preprocess", "running")
+            probe_path = write_probe(path, job.dir / "probe.json")
+            job.add_stage("preprocess", "done", path=str(probe_path))
+            job.add_stage(
+                "models",
+                "skipped",
+                reason=(
+                    "need --example NAME or --image/--mask-image/--pose/--mask-video "
+                    "for SCAIL-2 generate"
+                ),
+            )
+            plan = {
+                "prompt": prompt,
+                "stages": ["preprocess"],
+                "cloud": False,
+                "note": "preprocess-only; no generate",
+            }
+            (job.dir / "plan.json").write_text(
+                json.dumps(plan, indent=2) + "\n", encoding="utf-8"
+            )
+            job.status = "planned"
+            job.save()
+            return job
     else:
         raise RuntimeError(
             "provide --example, or --image + --mask-image + --pose + --mask-video, "
@@ -110,84 +113,88 @@ def run_edit(
         pose=str(inputs["pose"]),
         mode="scail2",
     )
-    job.add_stage("preprocess", "running")
-    write_probe(inputs["pose"], job.dir / "pose_probe.json")
-    job.add_stage("preprocess", "done")
+    with job.cancel_on_interrupt():
+        job.add_stage("preprocess", "running")
+        write_probe(inputs["pose"], job.dir / "pose_probe.json")
+        job.add_stage("preprocess", "done")
 
-    plan: dict[str, Any] = {
-        "prompt": prompt or "",
-        "model": model_name,
-        "target_h": target_h,
-        "target_w": target_w,
-        "steps": steps,
-        "offload": offload,
-        "t5_cpu": t5_cpu,
-        "replace": replace,
-        "inputs": {k: str(v) for k, v in inputs.items()},
-        "save_file": str(save_file),
-        "cloud": False,
-        "dry_run": dry_run,
-    }
-    (job.dir / "plan.json").write_text(json.dumps(plan, indent=2) + "\n", encoding="utf-8")
-    job.add_stage("plan", "done")
+        plan: dict[str, Any] = {
+            "prompt": prompt or "",
+            "model": model_name,
+            "target_h": target_h,
+            "target_w": target_w,
+            "steps": steps,
+            "offload": offload,
+            "t5_cpu": t5_cpu,
+            "replace": replace,
+            "inputs": {k: str(v) for k, v in inputs.items()},
+            "save_file": str(save_file),
+            "cloud": False,
+            "dry_run": dry_run,
+        }
+        (job.dir / "plan.json").write_text(json.dumps(plan, indent=2) + "\n", encoding="utf-8")
+        job.add_stage("plan", "done")
 
-    if skip_generate:
-        job.add_stage("generate", "skipped", reason="skip_generate")
-        job.status = "planned"
+        if skip_generate:
+            job.add_stage("generate", "skipped", reason="skip_generate")
+            job.status = "planned"
+            job.save()
+            return job
+
+        req = GenerateRequest(
+            image=inputs["image"],
+            mask_image=inputs["mask_image"],
+            pose=inputs["pose"],
+            mask_video=inputs["mask_video"],
+            prompt=prompt or "",
+            save_file=save_file,
+            model=model_name,
+            target_h=target_h,
+            target_w=target_w,
+            sample_steps=steps,
+            offload_model=offload,
+            t5_cpu=t5_cpu,
+            replace_flag=replace,
+            seed=seed,
+            dry_run=dry_run,
+        )
+
+        job.add_stage("generate", "running")
+        job.status = "running"
+        job.save()
+        try:
+            meta = run_generate(req)
+            (job.dir / "generate.json").write_text(
+                json.dumps(meta, indent=2) + "\n", encoding="utf-8"
+            )
+            if dry_run:
+                job.add_stage("generate", "dry_run")
+                job.status = "dry_run"
+            else:
+                if not save_file.is_file() or save_file.stat().st_size == 0:
+                    raise RuntimeError(
+                        "generation returned success but output video is missing or empty: "
+                        f"{save_file}"
+                    )
+                # copy into job dir for bookkeeping
+                dest = job.dir / save_file.name
+                if save_file.resolve() != dest.resolve():
+                    shutil.copy2(save_file, dest)
+                job.meta["output"] = str(save_file.resolve())
+                job.add_stage("generate", "done", output=str(save_file))
+                job.status = "completed"
+                if open_video:
+                    prompt_open_video(save_file)
+        except ScailNotReadyError as e:
+            job.add_stage("generate", "failed", error=str(e))
+            job.status = "failed"
+            job.save()
+            raise
+        except Exception as e:  # noqa: BLE001
+            job.add_stage("generate", "failed", error=str(e))
+            job.status = "failed"
+            job.save()
+            raise
+
         job.save()
         return job
-
-    req = GenerateRequest(
-        image=inputs["image"],
-        mask_image=inputs["mask_image"],
-        pose=inputs["pose"],
-        mask_video=inputs["mask_video"],
-        prompt=prompt or "",
-        save_file=save_file,
-        model=model_name,
-        target_h=target_h,
-        target_w=target_w,
-        sample_steps=steps,
-        offload_model=offload,
-        t5_cpu=t5_cpu,
-        replace_flag=replace,
-        seed=seed,
-        dry_run=dry_run,
-    )
-
-    job.add_stage("generate", "running")
-    job.status = "running"
-    job.save()
-    try:
-        meta = run_generate(req)
-        (job.dir / "generate.json").write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
-        if dry_run:
-            job.add_stage("generate", "dry_run")
-            job.status = "dry_run"
-        else:
-            if not save_file.is_file() or save_file.stat().st_size == 0:
-                raise RuntimeError(
-                    f"generation returned success but output video is missing or empty: {save_file}"
-                )
-            # copy into job dir for bookkeeping
-            dest = job.dir / save_file.name
-            if save_file.resolve() != dest.resolve():
-                shutil.copy2(save_file, dest)
-            job.meta["output"] = str(save_file.resolve())
-            job.add_stage("generate", "done", output=str(save_file))
-            job.status = "completed"
-            if open_video:
-                prompt_open_video(save_file)
-    except ScailNotReadyError as e:
-        job.add_stage("generate", "failed", error=str(e))
-        job.status = "failed"
-        job.save()
-        raise
-    except Exception as e:  # noqa: BLE001
-        job.add_stage("generate", "failed", error=str(e))
-        job.status = "failed"
-        job.save()
-        raise
-
-    job.save()
-    return job

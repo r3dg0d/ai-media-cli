@@ -13,7 +13,7 @@ from ai_media.qwen.backend import QwenBackend, QwenCudaRequiredError, QwenNotIns
 from ai_media.qwen.editing import run_img2img
 from ai_media.shared.config import load_config
 from ai_media.shared.diagnostics import run_doctor
-from ai_media.shared.signals import install_sigint_handler
+from ai_media.shared.signals import install_sigint_handler, interruptible_cli
 from ai_media.shared.ui import banner
 
 
@@ -59,6 +59,7 @@ def build_parser() -> argparse.ArgumentParser:
     return p
 
 
+@interruptible_cli
 def main(argv: list[str] | None = None) -> None:
     install_sigint_handler()
     parser = build_parser()
@@ -128,8 +129,6 @@ def main(argv: list[str] | None = None) -> None:
             raise
         print(f"error: {e}", file=sys.stderr)
         sys.exit(1)
-    except KeyboardInterrupt:
-        sys.exit(130)
 
     if args.benchmark:
         print(f"benchmark_s={time.perf_counter() - t0:.3f} output={path}")

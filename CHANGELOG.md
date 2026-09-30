@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- SIGINT/SIGTERM now unwind CLI work and return exit 130 instead of resuming
+  generation after printing a shutdown message. Shutdown callbacks run once
+  outside the signal handler; all four generation/workflow CLIs handle interrupts.
+- Active editvideo/3dai jobs record a cancelled stage on interruption; completed,
+  planned, and dry-run job states remain intact. Storage errors do not mask cancellation.
+
 - editvideo no longer marks generation completed when its requested output file
   is missing or empty. Failed jobs retain their failure stage and return a CLI
   error; dry-run continues to work without creating a video.

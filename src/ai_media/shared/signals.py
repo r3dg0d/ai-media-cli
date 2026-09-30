@@ -6,6 +6,7 @@ import signal
 import sys
 import threading
 from collections.abc import Callable
+from functools import wraps
 
 _lock = threading.Lock()
 _shutdown = False
@@ -41,13 +42,33 @@ def request_shutdown(signum: int | None = None, frame: object = None) -> None:
         pass
 
 
+def _handle_signal(signum: int, frame: object) -> None:
+    # Keep locks and callbacks outside the signal handler. Unwind through the
+    # workflow cleanup first; the CLI wrapper performs shutdown and exits 130.
+    raise KeyboardInterrupt
+
+
+def interruptible_cli(main: Callable[..., None]) -> Callable[..., None]:
+    @wraps(main)
+    def wrapped(*args: object, **kwargs: object) -> None:
+        try:
+            main(*args, **kwargs)
+        except KeyboardInterrupt:
+            try:
+                request_shutdown()
+            finally:
+                raise SystemExit(130) from None
+
+    return wrapped
+
+
 def install_sigint_handler() -> None:
     """Install SIGINT handler for clean Ctrl+C."""
-    signal.signal(signal.SIGINT, request_shutdown)
+    signal.signal(signal.SIGINT, _handle_signal)
     # Also handle SIGTERM when available
     if hasattr(signal, "SIGTERM"):
         try:
-            signal.signal(signal.SIGTERM, request_shutdown)
+            signal.signal(signal.SIGTERM, _handle_signal)
         except (ValueError, OSError):
             pass
 

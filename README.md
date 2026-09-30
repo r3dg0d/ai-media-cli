@@ -108,3 +108,18 @@ XDG path: `~/.config/ai-media/config.toml` (created with defaults on first load)
 ## Status
 
 See [STATUS.md](STATUS.md).
+
+## Cancellation
+
+`text2img`, `img2img`, `3dai`, and `editvideo` handle Ctrl+C (SIGINT) and SIGTERM
+with exit code 130. Interrupts unwind active Python work, then run registered
+shutdown callbacks once. Active editvideo/3dai jobs record an `interrupt` stage
+with status `cancelled` when their job store remains writable. Interrupting a
+preview after completion does not relabel the completed job.
+
+Cancellation does not remove partial outputs or undo side effects. Job records
+are best-effort; interruption before job creation or unavailable storage cannot
+record cancellation. Native backend calls may delay Python signal delivery;
+see [Python signal execution](https://docs.python.org/3/library/signal.html#execution-of-python-signal-handlers).
+Real GPU inference and arbitrary backend descendant cleanup are not established
+by the CPU-only signal tests.

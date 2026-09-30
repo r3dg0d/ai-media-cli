@@ -15,7 +15,7 @@ from ai_media.editvideo.runner import run_edit
 from ai_media.editvideo.tui import render_jobs
 from ai_media.shared.jobs import Job
 from ai_media.shared.media_preview import open_video
-from ai_media.shared.signals import install_sigint_handler
+from ai_media.shared.signals import install_sigint_handler, interruptible_cli
 from ai_media.shared.ui import banner, error, success
 
 
@@ -78,6 +78,7 @@ def build_parser() -> argparse.ArgumentParser:
     return p
 
 
+@interruptible_cli
 def main(argv: list[str] | None = None) -> None:
     install_sigint_handler()
     parser = build_parser()

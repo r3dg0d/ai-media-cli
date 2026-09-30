@@ -8,7 +8,7 @@ import sys
 
 from ai_media import __version__
 from ai_media.shared.jobs import Job
-from ai_media.shared.signals import install_sigint_handler
+from ai_media.shared.signals import install_sigint_handler, interruptible_cli
 from ai_media.shared.ui import banner, error, success
 from ai_media.threedai.pipeline import run_pipeline
 
@@ -29,6 +29,7 @@ def build_parser() -> argparse.ArgumentParser:
     return p
 
 
+@interruptible_cli
 def main(argv: list[str] | None = None) -> None:
     install_sigint_handler()
     parser = build_parser()
