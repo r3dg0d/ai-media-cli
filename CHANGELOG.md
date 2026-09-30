@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- editvideo no longer marks generation completed when its requested output file
+  is missing or empty. Failed jobs retain their failure stage and return a CLI
+  error; dry-run continues to work without creating a video.
+
 - Image CLI validation now fails before backend probing. Invalid aspect ratios,
   steps, dimensions, strength, and non-finite guidance produce usage errors.
 - Backend readiness, CUDA, and file errors are reported once on stderr,

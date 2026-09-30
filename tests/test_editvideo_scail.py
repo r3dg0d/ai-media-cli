@@ -83,3 +83,76 @@ def test_cli_help():
     help_text = p.format_help()
     assert "doctor" in help_text
     assert "smoke" in help_text
+
+
+@pytest.mark.parametrize("result", ["missing", "empty", "valid", "dry_run"])
+def test_runner_requires_output_before_completion(xdg_tmp, tmp_path, monkeypatch, result):
+    from ai_media.editvideo import runner
+    from ai_media.shared.jobs import Job, jobs_root
+
+    source = tmp_path / "input.bin"
+    source.write_bytes(b"fixture")
+    output = tmp_path / "generated.mp4"
+    monkeypatch.setattr(runner, "write_probe", lambda *args: None)
+
+    def fake_generate(req):
+        if result == "empty":
+            req.save_file.write_bytes(b"")
+        elif result == "valid":
+            req.save_file.write_bytes(b"fake video bytes")
+        return {"returncode": 0, "dry_run": req.dry_run}
+
+    monkeypatch.setattr(runner, "run_generate", fake_generate)
+    kwargs = dict(image=str(source), mask_image=str(source), pose=str(source),
+                  mask_video=str(source), output=str(output), open_video=False,
+                  dry_run=result == "dry_run")
+    if result in {"missing", "empty"}:
+        with pytest.raises(RuntimeError, match="missing or empty"):
+            run_edit(**kwargs)
+        states = list(jobs_root("editvideo").glob("*/state.json"))
+        assert len(states) == 1
+        loaded = Job.load("editvideo", states[0].parent.name)
+        assert loaded.status == "failed"
+        assert loaded.stages[-1]["status"] == "failed"
+        assert "output" not in loaded.meta
+    else:
+        job = run_edit(**kwargs)
+        assert job.status == ("dry_run" if result == "dry_run" else "completed")
+        if result == "valid":
+            assert job.meta["output"] == str(output.resolve())
+            assert (job.dir / output.name).read_bytes() == output.read_bytes()
+        else:
+            assert not output.exists()
+            assert "output" not in job.meta
+
+
+@pytest.mark.parametrize("result", ["missing", "empty", "valid", "dry_run"])
+def test_backend_validates_explicit_output(tmp_path, monkeypatch, result):
+    from types import SimpleNamespace
+
+    from ai_media.editvideo import backend
+
+    output = tmp_path / "generated.mp4"
+    req = GenerateRequest(image=output, mask_image=output, pose=output, mask_video=output,
+                          save_file=output, dry_run=result == "dry_run")
+    monkeypatch.setattr(backend, "build_generate_argv", lambda req: ["fake-generate"])
+    monkeypatch.setattr(backend.paths, "scail_repo", lambda: tmp_path)
+
+    def fake_run(*args, **kwargs):
+        if result == "empty":
+            output.write_bytes(b"")
+        elif result == "valid":
+            output.write_bytes(b"fake video bytes")
+        return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr(backend.subprocess, "run", fake_run)
+    if result in {"missing", "empty"}:
+        with pytest.raises(RuntimeError, match="missing or empty"):
+            backend.run_generate(req)
+    else:
+        meta = backend.run_generate(req)
+        if result == "valid":
+            assert meta["output"] == str(output.resolve())
+        else:
+            assert "returncode" not in meta
+            assert not output.exists()

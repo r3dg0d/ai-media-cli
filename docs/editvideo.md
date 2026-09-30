@@ -86,3 +86,11 @@ editvideo CLI
 ```
 
 Env vars: `AI_MEDIA_SCAIL_VENV`, `AI_MEDIA_SCAIL_REPO`, `AI_MEDIA_SCAIL_MODELS`.
+
+### Output completion checks
+
+Generation must return success and leave a nonempty file at the requested output
+path before the job is marked completed. Missing or empty output records a failed
+generation stage and reports an error. Dry-run does not require an output file.
+This checks file presence and size; it does not validate the video codec, establish
+that an existing output was freshly replaced, or test GPU inference.

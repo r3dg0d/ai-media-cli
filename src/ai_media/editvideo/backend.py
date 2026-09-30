@@ -167,7 +167,11 @@ def run_generate(req: GenerateRequest, *, env: dict[str, str] | None = None) -> 
             f"generate.py failed (exit {proc.returncode}). "
             f"stderr_tail:\n{meta['stderr_tail']}"
         )
-    if req.save_file and req.save_file.is_file():
+    if req.save_file is not None:
+        if not req.save_file.is_file() or req.save_file.stat().st_size == 0:
+            raise RuntimeError(
+                f"generation returned success but output video is missing or empty: {req.save_file}"
+            )
         meta["output"] = str(req.save_file.resolve())
     return meta
 

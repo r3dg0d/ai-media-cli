@@ -165,19 +165,19 @@ def run_edit(
             job.add_stage("generate", "dry_run")
             job.status = "dry_run"
         else:
+            if not save_file.is_file() or save_file.stat().st_size == 0:
+                raise RuntimeError(
+                    f"generation returned success but output video is missing or empty: {save_file}"
+                )
             # copy into job dir for bookkeeping
-            if save_file.is_file():
-                dest = job.dir / save_file.name
-                if save_file.resolve() != dest.resolve():
-                    shutil.copy2(save_file, dest)
-                job.meta["output"] = str(save_file.resolve())
-                job.add_stage("generate", "done", output=str(save_file))
-                job.status = "completed"
-                if open_video:
-                    prompt_open_video(save_file)
-            else:
-                job.add_stage("generate", "done", note="no output file detected")
-                job.status = "completed"
+            dest = job.dir / save_file.name
+            if save_file.resolve() != dest.resolve():
+                shutil.copy2(save_file, dest)
+            job.meta["output"] = str(save_file.resolve())
+            job.add_stage("generate", "done", output=str(save_file))
+            job.status = "completed"
+            if open_video:
+                prompt_open_video(save_file)
     except ScailNotReadyError as e:
         job.add_stage("generate", "failed", error=str(e))
         job.status = "failed"
