@@ -52,7 +52,10 @@ def warn(msg: str, *, console: Console | None = None) -> None:
 
 
 def error(msg: str, *, console: Console | None = None) -> None:
-    (console or get_console()).print(f"[red]✖[/red] {msg}")
+    # Failures must not land on stdout. Banner, success, and status stay there.
+    # A caller-supplied console is used as given.
+    c = console if console is not None else Console(stderr=True)
+    c.print(f"[red]✖[/red] {msg}")
 
 
 def status_line(msg: str, *, console: Console | None = None) -> None:
