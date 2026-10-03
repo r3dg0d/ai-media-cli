@@ -1,6 +1,6 @@
 # Status — ai-media-cli 0.1.0
 
-Last updated: 2026-09-29 02:57 PT (Phase 4 PATH / wrappers)
+Last updated: 2026-10-02 19:30 PT (published repo + editvideo cancel persist)
 
 ## Implemented (unit-testable, no GPU)
 
@@ -58,7 +58,7 @@ Last updated: 2026-09-29 02:57 PT (Phase 4 PATH / wrappers)
 - Qwen exposed as `text2img-qwen` / `img2img-qwen` via `scripts/install_qwen_wrappers.sh`.
 - Umbrella `~/.local/bin/ai-media` → XDG qwen venv `ai-media doctor`.
 - Desktop entries: `~/.local/share/applications/matrix-ai-*.desktop` (help/doctor only).
-- GitHub: local repo has **no origin** yet; `r3dg0d/ai-media-cli` not published — docs updated locally only.
+- GitHub: published at https://github.com/r3dg0d/ai-media-cli (`origin` on this clone).
 - Full Nix of Qwen/TRELLIS/SCAIL still blocked (CUDA wheels + huge weights); keep venv wrappers.
 
 ## 2026-09-22 — preview + TRELLIS stack
@@ -68,3 +68,7 @@ Last updated: 2026-09-29 02:57 PT (Phase 4 PATH / wrappers)
 - TRELLIS.2 cloned; env with torch/xformers; CUDA exts built (cumesh, flex_gemm, nvdiffrast, o_voxel)
 - `3dai doctor` → trellis status **ready** (weights download separate)
 - SCAIL-2 cloned; `scripts/setup_scail_env.sh` scaffold (weights not pulled)
+
+## 2026-10-02 — editvideo completion is saved before open
+
+- Finished editvideo jobs are marked `completed` (with the output path) before the open-video prompt. Interrupting that prompt no longer leaves the job at `running`.

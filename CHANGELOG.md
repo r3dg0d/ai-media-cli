@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- editvideo persists a completed job, including its output path, before the
+  open-video prompt. Ctrl+C during that prompt no longer leaves the finished
+  job stuck at `running`, and a prompt error cannot relabel it failed.
+
 - SIGINT/SIGTERM now unwind CLI work and return exit 130 instead of resuming
   generation after printing a shutdown message. Shutdown callbacks run once
   outside the signal handler; all four generation/workflow CLIs handle interrupts.

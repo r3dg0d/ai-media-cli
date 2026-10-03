@@ -64,3 +64,41 @@ def test_storage_failure_does_not_replace_keyboard_interrupt(xdg_tmp, monkeypatc
     with pytest.raises(KeyboardInterrupt), job.cancel_on_interrupt():
         raise KeyboardInterrupt
     assert "could not record cancelled job" in capsys.readouterr().err
+
+
+def test_interrupt_during_open_keeps_completed_editvideo_job(xdg_tmp, tmp_path, monkeypatch):
+    """A finished render must stay completed if the open prompt is interrupted."""
+    from ai_media.editvideo import runner
+
+    source = tmp_path / "input.bin"
+    source.write_bytes(b"fixture")
+    output = tmp_path / "generated.mp4"
+
+    def fake_generate(req):
+        req.save_file.write_bytes(b"fake video bytes")
+        return {"returncode": 0, "dry_run": False}
+
+    def interrupt_open(_path):
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(runner, "write_probe", lambda *args, **kwargs: None)
+    monkeypatch.setattr(runner, "run_generate", fake_generate)
+    monkeypatch.setattr(runner, "prompt_open_video", interrupt_open)
+
+    with pytest.raises(KeyboardInterrupt):
+        runner.run_edit(
+            image=str(source),
+            mask_image=str(source),
+            pose=str(source),
+            mask_video=str(source),
+            output=str(output),
+            open_video=True,
+        )
+
+    states = list(jobs_root("editvideo").glob("*/state.json"))
+    assert len(states) == 1
+    loaded = Job.load("editvideo", states[0].parent.name)
+    assert loaded.status == "completed"
+    assert loaded.meta["output"] == str(output.resolve())
+    assert all(stage["status"] != "cancelled" for stage in loaded.stages)
+    assert output.is_file() and output.stat().st_size > 0

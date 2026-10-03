@@ -38,7 +38,7 @@ that shadows LLaDA when `~/.local/bin` is prepended in `.bashrc`. Use:
 ## Install
 
 ```bash
-git clone https://github.com/r3dg0d/ai-media-cli.git   # when published
+git clone https://github.com/r3dg0d/ai-media-cli.git
 cd ai-media-cli   # or: cd ~/Projects/ai-media
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
@@ -115,7 +115,7 @@ See [STATUS.md](STATUS.md).
 with exit code 130. Interrupts unwind active Python work, then run registered
 shutdown callbacks once. Active editvideo/3dai jobs record an `interrupt` stage
 with status `cancelled` when their job store remains writable. Interrupting a
-preview after completion does not relabel the completed job.
+preview after completion does not relabel the completed job. editvideo writes `completed` and the output path before asking to open the video, so Ctrl+C during that prompt leaves the finished job completed.
 
 Cancellation does not remove partial outputs or undo side effects. Job records
 are best-effort; interruption before job creation or unavailable storage cannot

@@ -181,10 +181,10 @@ def run_edit(
                 if save_file.resolve() != dest.resolve():
                     shutil.copy2(save_file, dest)
                 job.meta["output"] = str(save_file.resolve())
-                job.add_stage("generate", "done", output=str(save_file))
+                # Persist completion before any interactive open. Ctrl+C during
+                # the prompt must not leave a finished job stuck at "running".
                 job.status = "completed"
-                if open_video:
-                    prompt_open_video(save_file)
+                job.add_stage("generate", "done", output=str(save_file))
         except ScailNotReadyError as e:
             job.add_stage("generate", "failed", error=str(e))
             job.status = "failed"
@@ -197,4 +197,7 @@ def run_edit(
             raise
 
         job.save()
-        return job
+
+    if open_video and job.status == "completed" and job.meta.get("output"):
+        prompt_open_video(job.meta["output"])
+    return job
